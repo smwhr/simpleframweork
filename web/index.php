@@ -15,15 +15,15 @@ $request = Request::createFromGlobals();
 
 
 $routes = new RouteCollection();
-include (__DIR__."/../app/config/routing.php");
-
 $context = new RequestContext();
 $context->fromRequest($request);
 $matcher = new UrlMatcher($routes, $context);
 $generator = new UrlGenerator($routes, $context);
 
+include (__DIR__."/../app/config/routing.php");
+
 function render_template($request){
-  global $pageDir, $generator;
+  global $pageDir;
   ob_start();
   extract($request->attributes->all(), EXTR_SKIP);
   include sprintf($pageDir. "%s.php", $_route );
@@ -32,15 +32,13 @@ function render_template($request){
 
 try{
   $request->attributes->add($matcher->match($request->getPathInfo()));
-
-  var_dump($request->attributes->all());
-
   $response = call_user_func($request->attributes->get('_controller'), $request);
-
 }catch(ResourceNotFoundException $e){
+  $response = new Response();
   $response->setStatusCode(404);
   $response->setContent("Oops nothing here !");
 }catch(Exception $e){
+  $response = new Response();
   $response->setStatusCode(500);
   $response->setContent("Déso c'est cassé :/");
 }
