@@ -12,7 +12,7 @@ use Symfony\Component\Routing\Matcher\UrlMatcher;
 use Symfony\Component\Routing\Generator\UrlGenerator;
 
 $request = Request::createFromGlobals();
-$response  = new Response();
+
 
 $routes = new RouteCollection();
 include (__DIR__."/../app/config/routing.php");
@@ -22,17 +22,21 @@ $context->fromRequest($request);
 $matcher = new UrlMatcher($routes, $context);
 $generator = new UrlGenerator($routes, $context);
 
+function render_template($request){
+  global $pageDir, $generator;
+  ob_start();
+  extract($request->attributes->all(), EXTR_SKIP);
+  include sprintf($pageDir. "%s.php", $_route );
+  return new Response(ob_get_clean());
+};
 
 try{
-  $attributes = $matcher->match($request->getPathInfo());
+  $request->attributes->add($matcher->match($request->getPathInfo()));
 
-  ob_start();
-  extract($attributes, EXTR_SKIP);
-  
-  include sprintf($pageDir. "%s.php", $attributes["_route"] );
+  var_dump($request->attributes->all());
 
-  $content = ob_get_clean();
-  $response->setContent($content);
+  $response = call_user_func($request->attributes->get('_controller'), $request);
+
 }catch(ResourceNotFoundException $e){
   $response->setStatusCode(404);
   $response->setContent("Oops nothing here !");
